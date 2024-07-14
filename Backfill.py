@@ -124,6 +124,7 @@ if __name__ == '__main__':
     else:
         dogecoin_df = pd.read_parquet(dogecoin)
 
+    dogecoin_df['volume'] = dogecoin_df['volume'].astype('double')
     dogecoin_fg = fs.get_or_create_feature_group(name="dogecoin",
                                                  version=1,
                                                  primary_key=["time"],
