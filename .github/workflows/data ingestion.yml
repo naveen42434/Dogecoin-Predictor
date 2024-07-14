@@ -1,9 +1,9 @@
 name: data ingestion
 
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 * * * *'
+#on:
+#  workflow_dispatch:
+#  schedule:
+#    - cron: '0 * * * *'
 
 jobs:
   test_schedule:

@@ -11,7 +11,7 @@ from paths import DATA_DIR
 from logger import get_console_logger
 from datetime import datetime, timedelta
 
-BACKFILL=True
+BACKFILL=False
 load_dotenv()
 
 logger = get_console_logger(name='dataset_generation')
@@ -110,7 +110,6 @@ def download_last_hour_data(product_id: str) -> pd.DataFrame:
 if __name__ == '__main__':
     if BACKFILL==False:
         data=download_last_hour_data("DOGE-USD")
-        print(data)
         if data.empty:
             logger.info('No new data fetched for the last hour, exiting.')
             exit()

@@ -165,3 +165,4 @@ predict.py
 preprocess.py
 trail.py
 training-pipeline.py
+data/
