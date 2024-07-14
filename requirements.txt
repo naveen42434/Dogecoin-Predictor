@@ -1,0 +1,12 @@
+pandas
+hopsworks
+python-dotenv
+parsedatetime
+scikit-learn
+ta
+numpy
+fire
+optuna
+xgboost
+lightgbm
+comet_ml
