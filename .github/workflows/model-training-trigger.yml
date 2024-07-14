@@ -17,20 +17,20 @@ jobs:
         with:
           python-version: '3.12.1'
           
-      - name: install python packages
+      - name: Install Python Packages
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           
-      - name: execute python workflows from bash script
+      - name: Execute Model Training
         env: 
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
           COMET_ML_API_KEY: ${{ secrets.COMET_ML_API_KEY }}
           COMET_ML_WORKSPACE: ${{ secrets.COMET_ML_WORKSPACE }}
         run: |
           chmod +x training-pipeline.py
-          python .\training-pipeline.py --model lasso
-          python .\training-pipeline.py --model xgboost
-          python .\training-pipeline.py --model lightgbm
-          python .\training-pipeline.py --model lightgbm --tune-hyperparams --sample-size 10000 --hyperparam-trials 20
-          python .\training-pipeline.py --model xgboost --tune-hyperparams --sample-size 10000 --hyperparam-trials 20
+          python training-pipeline.py --model lasso
+          python training-pipeline.py --model xgboost
+          python training-pipeline.py --model lightgbm
+          python training-pipeline.py --model lightgbm --tune-hyperparams --sample-size 10000 --hyperparam-trials 20
+          python training-pipeline.py --model xgboost --tune-hyperparams --sample-size 10000 --hyperparam-trials 20
