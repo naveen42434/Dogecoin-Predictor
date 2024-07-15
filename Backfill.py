@@ -139,16 +139,3 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         exit(1)
-    # connection = hopsworks.login(project=project_name, api_key_value=api_key)
-    # fs = connection.get_feature_store()
-    # if BACKFILL == False:
-    #     dogecoin_df = data
-    # else:
-    #     dogecoin_df = pd.read_parquet(dogecoin)
-    #
-    # dogecoin_df['volume'] = dogecoin_df['volume'].astype('double')
-    # dogecoin_fg = fs.get_or_create_feature_group(name="dogecoin",
-    #                                              version=1,
-    #                                              primary_key=["time"],
-    #                                              description="OHLC data of Dogecoin")
-    # dogecoin_fg.insert(dogecoin_df)

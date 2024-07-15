@@ -232,7 +232,7 @@ progress_bar.progress(70)
 ########### Predict Price for next hour
 
 st.write(36 * "-")
-fancy_header(f"Predicting Winning Probabilities...")
+fancy_header(f"Predicting Price for next hour...")
 
 predictions = model.predict(df)
 
