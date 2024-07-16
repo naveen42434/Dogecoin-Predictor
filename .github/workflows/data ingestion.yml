@@ -22,9 +22,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           
-      - name: execute python workflows from bash script
+      - name: Data ingestion
         env: 
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
           chmod +x Backfill.py
           python Backfill.py
+
+      - name: waiting for data ingestion
+        run: sleep 300
+
+      - name: Calculate MAE
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          COMET_ML_API_KEY: ${{ secrets.COMET_ML_API_KEY }}
+          COMET_ML_WORKSPACE: ${{ secrets.COMET_ML_WORKSPACE }}
+        run: |
+          chmod +x predict.py
+          python predict.py
