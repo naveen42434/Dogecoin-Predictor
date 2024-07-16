@@ -82,10 +82,16 @@ def load_production_model_from_registry(
 
 def get_actual_dogecoin_price() -> float:
     """Fetches the current price of Dogecoin from Binance API"""
-    response = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=DOGEUSDT")
-    response.raise_for_status()
-    data = response.json()
-    return float(data["price"])
+    try:
+        response = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=DOGEUSDT")
+        response.raise_for_status()
+        data = response.json()
+        return float(data["price"])
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}")
+    except Exception as err:
+        print(f"Other error occurred: {err}")
+    return None
 
 latest_features, _ = transform_ts_data_into_features_and_target()
 latest_features = latest_features.tail(1)
