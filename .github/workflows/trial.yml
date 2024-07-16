@@ -4,27 +4,27 @@ on:
   workflow_dispatch:
 
 jobs:
-  fetch_dogecoin_price:
+  test_schedule:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: checkout repo content
         uses: actions/checkout@v2
 
-      - name: Setup Python
+      - name: setup python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.x'
+          python-version: '3.12.1'
 
-      - name: Install dependencies
+      - name: install python packages
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install -r requirements.txt
 
-      - name: Fetch Dogecoin Price
+      - name: Calculate MAE
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          COMET_ML_API_KEY: ${{ secrets.COMET_ML_API_KEY }}
+          COMET_ML_WORKSPACE: ${{ secrets.COMET_ML_WORKSPACE }}
         run: |
-          python -c 'import requests; print(requests.get("https://api.pro.coinbase.com/products/DOGE-USD/ticker").json())'
-
-      - name: Display directory content
-        run: ls -R
+          chmod +x predict.py
+          python predict.py

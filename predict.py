@@ -83,7 +83,7 @@ def load_production_model_from_registry(
 def get_actual_dogecoin_price() -> float:
     """Fetches the current price of Dogecoin from Binance API"""
     try:
-        response = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=DOGEUSDT")
+        response = requests.get("https://api.pro.coinbase.com/products/DOGE-USD/ticker")
         response.raise_for_status()
         data = response.json()
         return float(data["price"])
