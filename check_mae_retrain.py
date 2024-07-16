@@ -10,13 +10,17 @@ project_name = "naveen"
 connection = hopsworks.login(project=project_name, api_key_value=api_key)
 fs = connection.get_feature_store()
 
+
 def fetch_mae_from_hopsworks():
     try:
         fs = connection.get_feature_store()
         feature_group = fs.get_feature_group(name='dogecoin_mae', version=1)
         df = feature_group.read()
-        latest_mae = df['mae'].iloc[-1]
-        return latest_mae
+
+        all_maes = df['mae'].tolist()
+        mean_mae = sum(all_maes) / len(all_maes)
+
+        return mean_mae
     except Exception as e:
         print(f"Error fetching MAE: {str(e)}")
         return None
