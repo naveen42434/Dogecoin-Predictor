@@ -1,5 +1,8 @@
 name: predict
 
+on:
+  workflow_dispatch:
+
 jobs:
   test_schedule:
     runs-on: ubuntu-latest
