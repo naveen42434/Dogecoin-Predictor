@@ -87,11 +87,12 @@ def get_actual_dogecoin_price() -> float:
         response.raise_for_status()
         data = response.json()
         return float(data["price"])
-    except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}")
-    except Exception as err:
-        print(f"Other error occurred: {err}")
-    return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error fetching Dogecoin price: {str(e)}")
+        return None
+    except (KeyError, ValueError) as e:
+        logger.error(f"Error parsing Dogecoin price data: {str(e)}")
+        return None
 
 latest_features, _ = transform_ts_data_into_features_and_target()
 latest_features = latest_features.tail(1)
