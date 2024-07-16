@@ -24,7 +24,7 @@ jobs:
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
-          python -c 'import requests; print(requests.get("https://api.binance.com/api/v3/ticker/price?symbol=DOGEUSDT").json())'
+          python -c 'import requests; print(requests.get("https://api.pro.coinbase.com/products/DOGE-USD/ticker").json())'
 
       - name: Display directory content
         run: ls -R
