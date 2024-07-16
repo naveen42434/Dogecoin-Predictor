@@ -11,3 +11,4 @@ xgboost
 lightgbm
 comet_ml
 streamlit
+requests
