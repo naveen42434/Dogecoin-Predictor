@@ -1,0 +1,38 @@
+name: Check MAE and Trigger Retraining
+
+on:
+  schedule:
+    - cron: '0 22 * * *'
+
+jobs:
+  check_mae_and_retrain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12.1'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests hopsworks python-dotenv
+
+      - name: Fetch MAE from Hopsworks
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+        run: |
+          python check_mae_retrain.py
+
+      - name: Trigger Model Retraining
+        if: steps.fetch_mae.outputs.mae > 0.05
+        run: |
+          echo "MAE exceeds threshold. Retraining model..."
+          curl -X POST \
+            -u ${{ secrets.USERNAME }}:${{ secrets.PAT }} \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/owner/repo/actions/workflows/model-training-trigger.yml/dispatches \
+            -d '{"ref": "main"}'

@@ -164,5 +164,3 @@ trail.py
 data/
 models/
 Production/
-check_mae_retrain.py
-check-mae.yml
