@@ -1,15 +1,14 @@
 import os
-from typing import Optional
-from pathlib import Path
-from dotenv import load_dotenv
-
 import pandas as pd
 import requests
 import hopsworks
+from typing import Optional
+from pathlib import Path
+from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 from paths import DATA_DIR
 from logger import get_console_logger
-from datetime import datetime, timedelta
 
 BACKFILL=False
 load_dotenv()
@@ -110,13 +109,17 @@ def download_last_hour_data(product_id: str) -> pd.DataFrame:
 
 def get_last_ingested_timestamp(feature_group) -> datetime:
     """
-    Retrieve the latest timestamp from the feature group.
+    Retrieve the exact last ingested timestamp from the feature group.
     """
     data = feature_group.read()
     if data.empty:
         return None
-    last_timestamp = data['time'].max()
-    return pd.to_datetime(last_timestamp)
+
+    # Get the last ingested timestamp
+    last_timestamp = data['time'].iloc[-1]
+
+    # Convert to datetime object
+    return pd.to_datetime(last_timestamp, unit='s')
 
 
 def download_data_since_last_ingested(feature_group) -> pd.DataFrame:
@@ -130,6 +133,7 @@ def download_data_since_last_ingested(feature_group) -> pd.DataFrame:
     # Convert last ingested timestamp to the next hour
     from_time = last_ingested_timestamp + timedelta(hours=1)
     from_time_str = from_time.strftime('%Y-%m-%dT%H:%M:%S')
+    print('starting time frame frame of ingested data is:',from_time_str)
     to_time = datetime.utcnow()
     to_time_str = to_time.strftime('%Y-%m-%dT%H:%M:%S')
 
@@ -148,8 +152,12 @@ if __name__ == '__main__':
                                                  primary_key=["time"],
                                                  description="OHLC data of Dogecoin")
         dogecoin_df = download_data_since_last_ingested(dogecoin_fg)
-        dogecoin_df['volume'] = dogecoin_df['volume'].astype('double')
-        dogecoin_fg.insert(dogecoin_df)
+        # print(dogecoin_df)
+        if dogecoin_df is None or dogecoin_df.empty:
+            print("No new data ingested. Existing data is up-to-date.")
+        else:
+            dogecoin_df['volume'] = dogecoin_df['volume'].astype('double')
+            dogecoin_fg.insert(dogecoin_df)
     except hopsworks.client.exceptions.RestAPIError as e:
         logger.error(f"Error connecting to Hopsworks API: {str(e)}")
         exit(1)

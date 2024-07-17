@@ -1,5 +1,6 @@
 import os
 import pickle
+import time
 import requests
 import numpy as np
 import streamlit as st
@@ -30,14 +31,15 @@ def fancy_header(text, font_size=24):
 
 def get_last_ingested_timestamp(feature_group) -> datetime:
     """
-    Retrieve the latest timestamp from the feature group.
+    Retrieve the exact last ingested timestamp from the feature group.
     """
     data = feature_group.read()
     if data.empty:
         return None
-    last_timestamp = data['time'].max()
-    return pd.to_datetime(last_timestamp)
 
+    last_timestamp = data['time'].iloc[-1]
+
+    return pd.to_datetime(last_timestamp, unit='s')
 
 def download_data_since_last_ingested(feature_group) -> pd.DataFrame:
     """
@@ -133,7 +135,6 @@ def process_for_prediction(df: pd.DataFrame) -> pd.DataFrame:
     Prepare data for prediction.
     """
     latest_features, target = transform_ts_data_into_features_and_target()
-    # retrieve the latest feature
     df = latest_features.tail(1)
     actual_target = target.tail(1).values
 
@@ -171,7 +172,6 @@ def get_model(
         # st.info(f'Found {status} model versions: {model_versions}')
         model_version = model_versions[0]
 
-    # download model from comet ml registry to local file
     api.download_registry_model(
         workspace,
         registry_name=model_name,
@@ -180,7 +180,6 @@ def get_model(
         expand=True
     )
 
-    # load model from local file to memory
     pkl_files = [file for file in os.listdir('./Production') if file.endswith('.pkl')]
 
     if len(pkl_files) == 0:
@@ -211,9 +210,39 @@ st.write("Note: The model performance and predictions can vary based on the mark
 progress_bar = st.sidebar.header('⚙️ Working Progress')
 progress_bar = st.sidebar.progress(0)
 st.write(36 * "-")
-fancy_header('\n📡 Connecting to Hopsworks Feature Store...')
+
+########### Data Ingestion Step
+
+fancy_header('\n📥 Ingesting latest data from Coinbase API...')
+
+try:
+    connection = hopsworks.login(project="naveen", api_key_value=HOPSWORKS_API_KEY)
+    fs = connection.get_feature_store()
+    dogecoin_fg = fs.get_or_create_feature_group(name="dogecoin",
+                                                 version=1,
+                                                 primary_key=["time"],
+                                                 description="OHLC data of Dogecoin")
+    dogecoin_df = download_data_since_last_ingested(dogecoin_fg)
+
+    if dogecoin_df is None or dogecoin_df.empty:
+        st.write("No new data ingested. Existing data is up-to-date.")
+    else:
+        dogecoin_df['volume'] = dogecoin_df['volume'].astype('double')
+        dogecoin_fg.insert(dogecoin_df)
+        st.write("waiting for ingestion of data")
+        time.sleep(240)
+        st.write("Data ingestion successful! ✔️")
+except hopsworks.client.exceptions.RestAPIError as e:
+    st.error(f"Error ingesting data: {str(e)}")
+except Exception as e:
+    st.error(f"Unexpected error during data ingestion: {str(e)}")
+
+progress_bar.progress(10)
 
 ########### Connect to Hopsworks Feature Store and get Feature Group
+
+st.write(36 * "-")
+fancy_header('\n📡 Connecting to Hopsworks Feature Store...')
 
 project = hopsworks.login(project="naveen",api_key_value=HOPSWORKS_API_KEY)
 fs = project.get_feature_store()
