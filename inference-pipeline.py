@@ -1,12 +1,12 @@
 import os
 import pickle
-
+import requests
 import numpy as np
 import streamlit as st
 import hopsworks
 import pandas as pd
 from comet_ml import API
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error
 from sklearn.pipeline import Pipeline
 from dotenv import load_dotenv
 from typing import List, Tuple, Optional, Union
@@ -111,6 +111,20 @@ def process_for_prediction(df: pd.DataFrame) -> pd.DataFrame:
 
     return df,actual_target
 
+def get_actual_dogecoin_price() -> float:
+    """Fetches the current price of Dogecoin from Binance API"""
+    try:
+        response = requests.get("https://api.pro.coinbase.com/products/DOGE-USD/ticker")
+        response.raise_for_status()
+        data = response.json()
+        return float(data["price"])
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching Dogecoin price: {str(e)}")
+        return None
+    except (KeyError, ValueError) as e:
+        st.error(f"Error parsing Dogecoin price data: {str(e)}")
+        return None
+
 def get_model(
         workspace: str,
         api_key: str,
@@ -173,7 +187,7 @@ fancy_header('\n📡 Connecting to Hopsworks Feature Store...')
 
 ########### Connect to Hopsworks Feature Store and get Feature Group
 
-project = hopsworks.login(api_key_value=HOPSWORKS_API_KEY)
+project = hopsworks.login(project="naveen",api_key_value=HOPSWORKS_API_KEY)
 fs = project.get_feature_store()
 
 dogecoin_fg = fs.get_feature_group(
@@ -189,15 +203,15 @@ progress_bar.progress(20)
 st.write(36 * "-")
 fancy_header('\n☁️ Retrieving data from Feature Store...')
 
-# try:
-feature_view = fs.get_feature_view(name="dogecoin", version=1)
-# except:
-#         dogecoin_fg = fs.get_feature_group(name="dogecoin", version=1)
-#         ds_query = dogecoin_fg.select_all()
-#         feature_view = fs.create_feature_view(name="dogecoin",
-#                                       version=1,
-#                                       description="Read from Dogecoin dataset",
-#                                       query=ds_query)
+try:
+    feature_view = fs.get_feature_view(name="dogecoin", version=1)
+except:
+        dogecoin_fg = fs.get_feature_group(name="dogecoin", version=1)
+        ds_query = dogecoin_fg.select_all()
+        feature_view = fs.create_feature_view(name="dogecoin",
+                                      version=1,
+                                      description="Read from Dogecoin dataset",
+                                      query=ds_query)
 
 data = feature_view.get_batch_data()
 data.to_parquet("ohlc_data.parquet", index=False)
@@ -238,17 +252,21 @@ predictions = model.predict(df)
 
 st.markdown(f"<span style='color: green; font-size: 20px;'>Predicted Price for the next hour:</span> <span style='color: blue; font-size: 20px;'>{predictions[0]}</span>", unsafe_allow_html=True)
 
+st.write(36 * "-")
+fancy_header(f"Actual Price for next hour...")
+
+actual_price = get_actual_dogecoin_price()
+st.markdown(f"<span style='color: green; font-size: 20px;'>Actual Dogecoin Price for the next hour:</span> <span style='color: blue; font-size: 20px;'>{actual_price}</span>", unsafe_allow_html=True)
+
 progress_bar.progress(85)
 
 st.write(36 * "-")
 fancy_header(f"Evaluating Metrics...")
 
-mae = mean_absolute_error(target, predictions)
-mse = mean_squared_error(target, predictions)
+mae = mean_absolute_error([actual_price], predictions)
 
 # Show accuracy
 st.markdown(f"**Mean Absolute Error (MAE):** {mae}")
-st.markdown(f"**Mean Squared Error (MSE):** {mse}")
 
 progress_bar.progress(100)
 
