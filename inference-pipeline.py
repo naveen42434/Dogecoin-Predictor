@@ -11,6 +11,7 @@ from sklearn.pipeline import Pipeline
 from dotenv import load_dotenv
 from typing import List, Tuple, Optional, Union
 from pathlib import Path
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -26,6 +27,37 @@ except:
 def fancy_header(text, font_size=24):
     res = f'<span style="color:#ff5f27; font-size: {font_size}px;">{text}</span>'
     st.markdown(res, unsafe_allow_html=True)
+
+def get_last_ingested_timestamp(feature_group) -> datetime:
+    """
+    Retrieve the latest timestamp from the feature group.
+    """
+    data = feature_group.read()
+    if data.empty:
+        return None
+    last_timestamp = data['time'].max()
+    return pd.to_datetime(last_timestamp)
+
+
+def download_data_since_last_ingested(feature_group) -> pd.DataFrame:
+    """
+    Download data from Coinbase since the last ingested timestamp.
+    """
+    last_ingested_timestamp = get_last_ingested_timestamp(feature_group)
+    if last_ingested_timestamp is None:
+        raise ValueError("No previous data ingested.")
+
+    # Convert last ingested timestamp to the next hour
+    from_time = last_ingested_timestamp + timedelta(hours=1)
+    from_time_str = from_time.strftime('%Y-%m-%dT%H:%M:%S')
+    to_time = datetime.utcnow()
+    to_time_str = to_time.strftime('%Y-%m-%dT%H:%M:%S')
+
+    URL = f'https://api.exchange.coinbase.com/products/DOGE-USD/candles?start={from_time_str}&end={to_time_str}&granularity=3600'
+    r = requests.get(URL)
+    data = r.json()
+
+    return pd.DataFrame(data, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
 def transform_ts_data_into_features_and_target(
         # ts_data: pd.DataFrame,

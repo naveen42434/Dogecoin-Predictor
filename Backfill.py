@@ -107,31 +107,48 @@ def download_last_hour_data(product_id: str) -> pd.DataFrame:
         logger.error(f"Error fetching data from Coinbase API: {str(e)}")
         return pd.DataFrame()  # Return an empty DataFrame on error
 
-if __name__ == '__main__':
-    if BACKFILL==False:
-        data=download_last_hour_data("DOGE-USD")
-        if data.empty:
-            logger.info('No new data fetched for the last hour, exiting.')
-            exit()
-        else:
-            logger.info('New data fetched, proceeding with insertion.')
-    else:
-        dogecoin=download_ohlc_data_from_coinbase("DOGE-USD","2021-06-04","2024-07-14")
 
+def get_last_ingested_timestamp(feature_group) -> datetime:
+    """
+    Retrieve the latest timestamp from the feature group.
+    """
+    data = feature_group.read()
+    if data.empty:
+        return None
+    last_timestamp = data['time'].max()
+    return pd.to_datetime(last_timestamp)
+
+
+def download_data_since_last_ingested(feature_group) -> pd.DataFrame:
+    """
+    Download data from Coinbase since the last ingested timestamp.
+    """
+    last_ingested_timestamp = get_last_ingested_timestamp(feature_group)
+    if last_ingested_timestamp is None:
+        raise ValueError("No previous data ingested.")
+
+    # Convert last ingested timestamp to the next hour
+    from_time = last_ingested_timestamp + timedelta(hours=1)
+    from_time_str = from_time.strftime('%Y-%m-%dT%H:%M:%S')
+    to_time = datetime.utcnow()
+    to_time_str = to_time.strftime('%Y-%m-%dT%H:%M:%S')
+
+    URL = f'https://api.exchange.coinbase.com/products/DOGE-USD/candles?start={from_time_str}&end={to_time_str}&granularity=3600'
+    r = requests.get(URL)
+    data = r.json()
+
+    return pd.DataFrame(data, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
+
+if __name__ == '__main__':
     try:
         connection = hopsworks.login(project=project_name, api_key_value=api_key)
         fs = connection.get_feature_store()
-
-        if BACKFILL == False:
-            dogecoin_df = data
-        else:
-            dogecoin_df = pd.read_parquet(dogecoin)
-
-        dogecoin_df['volume'] = dogecoin_df['volume'].astype('double')
         dogecoin_fg = fs.get_or_create_feature_group(name="dogecoin",
-                                                     version=1,
-                                                     primary_key=["time"],
-                                                     description="OHLC data of Dogecoin")
+                                                 version=1,
+                                                 primary_key=["time"],
+                                                 description="OHLC data of Dogecoin")
+        dogecoin_df = download_data_since_last_ingested(dogecoin_fg)
+        dogecoin_df['volume'] = dogecoin_df['volume'].astype('double')
         dogecoin_fg.insert(dogecoin_df)
     except hopsworks.client.exceptions.RestAPIError as e:
         logger.error(f"Error connecting to Hopsworks API: {str(e)}")
@@ -139,3 +156,35 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         exit(1)
+
+    # if BACKFILL==False:
+    #     data=download_last_hour_data("DOGE-USD")
+    #     if data.empty:
+    #         logger.info('No new data fetched for the last hour, exiting.')
+    #         exit()
+    #     else:
+    #         logger.info('New data fetched, proceeding with insertion.')
+    # else:
+    #     dogecoin=download_ohlc_data_from_coinbase("DOGE-USD","2021-06-04","2024-07-14")
+    #
+    # try:
+    #     connection = hopsworks.login(project=project_name, api_key_value=api_key)
+    #     fs = connection.get_feature_store()
+    #
+    #     if BACKFILL == False:
+    #         dogecoin_df = data
+    #     else:
+    #         dogecoin_df = pd.read_parquet(dogecoin)
+    #
+    #     dogecoin_df['volume'] = dogecoin_df['volume'].astype('double')
+    #     dogecoin_fg = fs.get_or_create_feature_group(name="dogecoin",
+    #                                                  version=1,
+    #                                                  primary_key=["time"],
+    #                                                  description="OHLC data of Dogecoin")
+    #     dogecoin_fg.insert(dogecoin_df)
+    # except hopsworks.client.exceptions.RestAPIError as e:
+    #     logger.error(f"Error connecting to Hopsworks API: {str(e)}")
+    #     exit(1)
+    # except Exception as e:
+    #     logger.error(f"Unexpected error: {str(e)}")
+    #     exit(1)
