@@ -42,10 +42,6 @@ def transform_ts_data_into_features_and_target(
     ts_data = ts_data[['time', 'close']]
     ts_data.sort_values(by=['time'], inplace=True)
 
-    # output features and targets
-    features = pd.DataFrame()
-    targets = pd.DataFrame()
-
     # pre-compute cutoff indices to split dataframe rows
     indices = get_cutoff_indices_features_and_target(
         ts_data,
@@ -167,18 +163,18 @@ def get_model(
 
 ############################### Streamlit app ##############################
 
-st.title('DOGECOIN Prediction Project')
+st.title('DOGECOIN Price Prediction Project')
 st.write(36 * "-")
 st.write("This app uses a machine learning model to predict the hourly price of DOGECOIN.")
 st.write("")
 st.write(
-    "This streamlit app demonstrates on-demand retrieval of data from the Hopsworks Feature Store, loading a model from the Cometml Model Registry, and making predictions.")
-# st.write(" - For the 2022-23 regular season (not playoffs), the current model would have an accuracy of 0.615.")
-# st.write(" - One of the best publicly available models achieved an accuracy of 0.656.")
-# st.write(" - A simple baseline model of 'home team always wins' would have an accuracy of 0.58.")
-# st.write("")
-# st.write(
-#     "Note: NBA season and postseason usually runs annually from October to June. There will be no games to predict outside of this time period.")
+    "This Streamlit app demonstrates on-demand retrieval of data from the Hopsworks Feature Store, loading a model from the CometML Model Registry, and making predictions.")
+
+st.write(" - For the historical data, the current model has achieved a mean absolute error (MAE) of 0.00133.")
+st.write(" - This model is designed to predict hourly price changes of Dogecoin with high accuracy.")
+st.write(" - A baseline model that predicts the price will remain the same as the previous hour would typically have a higher MAE.")
+st.write("")
+st.write("Note: The model performance and predictions can vary based on the market conditions and the quality of the input data.")
 
 progress_bar = st.sidebar.header('⚙️ Working Progress')
 progress_bar = st.sidebar.progress(0)
