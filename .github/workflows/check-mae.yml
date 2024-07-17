@@ -3,7 +3,7 @@ name: Check MAE and Trigger Retraining
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 22 * * *'
+    - cron: '0 */4 * * *'
 
 jobs:
   check_mae_and_retrain:

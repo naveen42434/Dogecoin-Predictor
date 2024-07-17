@@ -1,5 +1,6 @@
 import os
 import hopsworks
+import pandas as pd
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,19 +19,32 @@ def fetch_mae_from_hopsworks():
         df = feature_group.read()
 
         all_maes = df['mae'].tolist()
-        mean_mae = sum(all_maes) / len(all_maes)
-
-        return mean_mae
+        return all_maes
     except Exception as e:
         print(f"Error fetching MAE: {str(e)}")
         return None
 
+
+def should_retrain(mae_values, window_size=5, threshold=0.05):
+    if len(mae_values) < window_size:
+        return False
+
+    rolling_avg = pd.Series(mae_values).rolling(window=window_size).mean().tolist()
+    print(f"Rolling window MAE: {rolling_avg[-1]}")
+
+    if rolling_avg[-1] > threshold:
+        return True
+
+    return False
+
+
 if __name__ == "__main__":
-    mae = fetch_mae_from_hopsworks()
-    MAE_THRESHOLD=0.05
-    if mae is not None:
-        print(f"Latest MAE: {mae}")
-        if mae > MAE_THRESHOLD:
+    mae_values = fetch_mae_from_hopsworks()
+    if mae_values is not None:
+        retrain = should_retrain(mae_values)
+        if retrain:
             print("MAE exceeds threshold. Triggering model retraining...")
+        else:
+            print("MAE within acceptable range. No retraining needed.")
     else:
         print("Failed to fetch MAE from Hopsworks.")
